@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "fin-pdf-extract"
+version = "0.1.0"
+description = ""
+authors = ["Ezra Tampubolon"]
+readme = "README.md"
+packages = [{include = "fin_pdf_extract"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+tabula-py = "^2.5.1"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.15.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
