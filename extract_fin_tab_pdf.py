@@ -2,11 +2,11 @@
 """
 
 # Imports
-import tabula
-import pandas as pd
 from re import sub
-import numpy as np
 from typing import Dict
+from tabula.io import read_pdf
+import pandas as pd
+import numpy as np
 
 
 def replace_special_char(input_string: str, char_replacement=" ") -> str:
@@ -14,12 +14,13 @@ def replace_special_char(input_string: str, char_replacement=" ") -> str:
 
     Args:
         input_string (str): String to be procesed
-        char_replacement (str, optional): Character to replace the special characters. Defaults to " ".
+        char_replacement (str, optional): Character to replace the special characters.
+        Defaults to " ".
 
     Returns:
         str: Result string
     """
-    return sub("[^a-zA-Z0-9 \n\.]", char_replacement, input_string)
+    return sub(r"[^a-zA-Z0-9 \n\.]", char_replacement, input_string)
 
 
 def join_string_from_list(input_list: list, char_join=" ") -> str:
@@ -27,7 +28,8 @@ def join_string_from_list(input_list: list, char_join=" ") -> str:
 
     Args:
         input_list (list): String to be processed
-        char_join (str, optional): Character used for joining the list of input strings. Defaults to " ".
+        char_join (str, optional): Character used for joining the list of input strings.
+        Defaults to " ".
 
     Returns:
         str: Result string
@@ -53,7 +55,19 @@ def snake_case(input_string: str) -> str:
     ).lower()
 
 
-def delete_fin_unit(string: str) -> dict:
+def delete_fin_unit(string: str) -> Dict[str, str]:
+    """Separate the financial unit from a string.
+    Financial units are dollar and percent.
+    Example: "$ 180" -> {"val": "180", "unit": "$"}
+
+    Args:
+        string (str): String possibly containing financial unit.
+
+    Returns:
+        dict: val -> value
+              unit -> unit
+    """
+
     li_spec_char = ["$", "%"]
 
     for char in li_spec_char:
@@ -64,11 +78,22 @@ def delete_fin_unit(string: str) -> dict:
             ind_spec_char = string_split.index(char)
             string_split.pop(ind_spec_char)
             return dict(val=string_split[0], unit=char)
+
         else:
             return dict(val=string, unit="nan")
 
 
 def get_val_unit(dataframe: pd.DataFrame, col_nm: str) -> pd.DataFrame:
+    """Get value and unit of a column as df
+
+    Args:
+        dataframe (pd.DataFrame): Input DF
+        col_nm (str): Column name where the value and unit
+        should be extracted from
+
+    Returns:
+        pd.DataFrame: DF with value and unit of the chosen column
+    """
     return (
         dataframe[col_nm]
         .astype(str)
@@ -79,7 +104,16 @@ def get_val_unit(dataframe: pd.DataFrame, col_nm: str) -> pd.DataFrame:
     )
 
 
-def check_unit(df_val_unit: pd.DataFrame):
+def check_unit(df_val_unit: pd.DataFrame) -> Dict[bool, str]:
+    """Check whether the output of get_val_unit indeed contains unit
+
+    Args:
+        df_val_unit (pd.DataFrame): DF output of get_val_unit
+
+    Returns:
+        Dict[bool,str]: dict with flag whether unit exists or not
+        and corresponding unit.
+    """
     temp_res = df_val_unit["unit"].agg(lambda x: list(set(x.dropna())))
     if len(temp_res) == 1:
         return dict(fg_unit=True, unit=temp_res[0])
@@ -109,7 +143,7 @@ class FinTabPdf:
         """
 
         # Load the pdf table to pandas format
-        self.df_pdf_raw = tabula.read_pdf(path_pdf, pages=page)[0].rename(
+        self.df_pdf_raw = read_pdf(path_pdf, pages=page)[0].rename(
             columns={"Unnamed: 0": "row_nm"}
         )
 
@@ -127,10 +161,17 @@ class FinTabPdf:
     def _sep_nan_row_nm(df_raw: pd.DataFrame) -> Dict[pd.DataFrame, pd.DataFrame]:
         """Position/row names usually in row_nm.
         Extract those rows which has nan entry in that column
+
+        Args:
+            df_raw (pd.DataFrame): _description_
+
+        Returns:
+            Dict[pd.DataFrame, pd.DataFrame]: _description_
         """
+
         df_nan_row_nm = df_raw[pd.isna(df_raw["row_nm"])]
         df_res = df_raw.drop(df_nan_row_nm.index)
-        df_res = df_res
+
         return dict(nan_row_nm=df_nan_row_nm, res=df_res)
 
     @staticmethod
@@ -170,7 +211,9 @@ class FinTabPdf:
         # Remove unit columns
         li_col = list(df_input.columns)
         ser_unit_cols = find_unit_cols(df_input)
-        [li_col.remove(col) for col in ser_unit_cols.keys()]
+
+        for col in ser_unit_cols.keys():
+            li_col.remove(col)
 
         # Extract unit from columns
         for col in li_col:
@@ -185,9 +228,7 @@ class FinTabPdf:
                 # get the index of the column
                 idx_col = df_input.columns.get_loc(col)
 
-                if dict_check_unit["unit"] == "$":
-                    idx_col = idx_col
-                elif dict_check_unit["unit"] == "%":
+                if dict_check_unit["unit"] == "%":
                     idx_col = idx_col + 1
 
                 df_input[col] = col_val_unit["val"]
@@ -233,11 +274,12 @@ class FinTabPdf:
 
         return self.df_preproc
 
-    def extract_col_nm(self, li_col_idx=[0, 1]) -> pd.Series:
+    def extract_col_nm(self, li_col_idx: list) -> pd.Series:
         """Function for extracting column names as the might be given in certain columns
 
         Args:
-            li_col_idx (list, optional): List of column indexes, where the column names are given. Defaults to [0,1].
+            li_col_idx (list, optional): List of column indexes, where the column names are given.
+            Defaults to [0,1].
 
         Returns:
             pd.Series: Series with column names and the real column names
