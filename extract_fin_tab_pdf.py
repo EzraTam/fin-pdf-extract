@@ -121,7 +121,15 @@ def check_unit(df_val_unit: pd.DataFrame) -> Dict[bool, str]:
         return dict(fg_unit=False, unit=None)
 
 
-def find_unit_cols(dataframe: pd.DataFrame):
+def find_unit_cols(dataframe: pd.DataFrame) -> pd.Series:
+    """Find columns containing financial units
+
+    Args:
+        dataframe (pd.DataFrame): Input DF
+
+    Returns:
+        pd.Series: Column name and the corresponding units
+    """
     li_el_in_cols = dataframe.agg(lambda x: list(set(x.dropna())))
     count_el = li_el_in_cols.apply(len)
     col_singleton = count_el[count_el == 1]
@@ -252,7 +260,12 @@ class FinTabPdf:
 
         return dict(result=df_input, units=dict_unit)
 
-    def preprocess_raw(self):
+    def preprocess_raw(self) -> pd.DataFrame:
+        """Method to preprocess data
+
+        Returns:
+            pd.DataFrame: Preprocessed data
+        """
 
         # Separate rows with nan row_nm column entries
         nan_row_sep = self._sep_nan_row_nm(self.df_pdf_raw)
