@@ -11,6 +11,7 @@ python = "^3.8"
 tabula-py = "^2.5.1"
 ipykernel = "^6.16.0"
 tabula = "^1.0.5"
+pypdf2 = "^3.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
